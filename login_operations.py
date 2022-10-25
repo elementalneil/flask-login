@@ -61,6 +61,14 @@ class LoginPage:
         
         return status
 
+    def return_accounts(self):
+        usernames = []
+        rows = self.db_cursor.execute("SELECT username FROM Accounts")
+        for line in rows.fetchall():
+            usernames.append(line[0])
+
+        return usernames
+        
 
 def main():
     login_obj = LoginPage()
