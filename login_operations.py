@@ -3,11 +3,21 @@ import sqlite3
 
 # The following class handles all database operations related to logging in and signing up
 class LoginPage:
+    # Data Members
+    # Remember that Python data members are public by default
+    # A single underscore before data member makes it protected
+    # A double underscore makes it private
+    __db_connection = None
+    __db_cursor = None
+    __logged_in = None
+
     # The constructor establishes connection to the database if it exists
     # Otherwise it creates the database
     def __init__(self):
-        self.db_connection = sqlite3.connect("LoginProject.sqlite")  # Establishes connection to database file
-        self.db_cursor = self.db_connection.cursor()    # Cursor to connection object. Allows us to interact with db.
+        self.__db_connection = sqlite3.connect("LoginProject.sqlite")  # Establishes connection to database file
+        self.__db_cursor = self.__db_connection.cursor()    # Cursor to connection object. Allows us to interact with db.
+
+        self.__logged_in = False  # Flag that maintains if the user is logged in or not
 
         # SQL Queries to set up database if it does not exist
         init_script = '''
@@ -18,13 +28,13 @@ class LoginPage:
         '''
 
         # The executescript function takes a script, executes it, returns a new cursor object
-        self.db_cursor.executescript(init_script)       # Executes create table script
+        self.__db_cursor.executescript(init_script)       # Executes create table script
 
     # Creates a new account from given username and password
     # If username is already taken, returns false
     def create_account(self, username, password):
         # The execute function takes a single SQL statement, executes it, returns a new cursor object
-        res = self.db_cursor.execute('SELECT * FROM Accounts WHERE username = ?', (username, ))
+        res = self.__db_cursor.execute('SELECT * FROM Accounts WHERE username = ?', (username, ))
         # cursor.fetchone() returns one tuple from the relation that the cursor contains
         row = res.fetchone()
 
@@ -35,15 +45,15 @@ class LoginPage:
             hashed_password = bcrypt.hashpw(password, bcrypt.gensalt())
 
             # The username and encrypted password are stored into the database.
-            self.db_cursor.execute('INSERT INTO Accounts VALUES(?, ?)', (username, hashed_password))
-            self.db_connection.commit()     # Remember to always commit the changes
+            self.__db_cursor.execute('INSERT INTO Accounts VALUES(?, ?)', (username, hashed_password))
+            self.__db_connection.commit()     # Remember to always commit the changes
 
             return True
         else:
             return False
 
     def login(self, username, password):
-        res = self.db_cursor.execute('SELECT * FROM Accounts WHERE username = ?', (username, ))
+        res = self.__db_cursor.execute('SELECT * FROM Accounts WHERE username = ?', (username, ))
         row = res.fetchone()
         # row is a list where each element represents each attribute of the tuple
 
@@ -53,6 +63,7 @@ class LoginPage:
             # Now, we will check if the given password matches the password in the database
             password = bytes(password, 'utf-8')
             if(bcrypt.checkpw(password, row[1])):
+                self.__logged_in = True
                 status = 1
             else:
                 status = 3
@@ -63,12 +74,18 @@ class LoginPage:
 
     def return_accounts(self):
         usernames = []
-        rows = self.db_cursor.execute("SELECT username FROM Accounts")
+        rows = self.__db_cursor.execute("SELECT username FROM Accounts")
         for line in rows.fetchall():
             usernames.append(line[0])
 
         return usernames
-        
+
+    def logout(self):
+        self.__logged_in = False
+
+    def is_logged_in(self):
+        return self.__logged_in
+
 
 def main():
     login_obj = LoginPage()
