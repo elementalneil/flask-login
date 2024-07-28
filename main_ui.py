@@ -49,3 +49,6 @@ def login(status = 0):
 def logout():
     session.pop('username', None)
     return redirect(url_for('index'))
+
+
+#adding new comments
